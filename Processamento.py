@@ -1,7 +1,9 @@
+#Divisão da base em treino e teste e balanceamento do conjunto de treino
+
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler, OrdinalEncoder # <-- Importa o OrdinalEncoder
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler, OrdinalEncoder 
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from imblearn.over_sampling import SMOTE
@@ -18,15 +20,13 @@ except FileNotFoundError:
     exit()
 
 # --- 2. DEFINIR A VARIÁVEL ALVO (y) ---
-# ⚠️ IMPORTANTE: Assumindo que você já substituiu isso.
-TARGET_COLUMN = 'DIABETES' # <--- CONFIRME SE O NOME ESTÁ CORRETO
+TARGET_COLUMN = 'DIABETES' 
 
 if TARGET_COLUMN not in df.columns:
     print(f"🛑 Erro: A coluna alvo '{TARGET_COLUMN}' não foi encontrada no DataFrame.")
     exit()
 
 # --- 3. Definir Listas de Features (X) ---
-# (As listas continuam as mesmas)
 colunas_numericas = [
     "IDADE", "RENDA_TOTAL", "Peso_Final", "Altura_Final_cm", "IMC"
 ]
@@ -61,21 +61,16 @@ print("\n--- Distribuição das classes (Antes do SMOTE) ---")
 print("Treino (y_train):\n", y_train.value_counts(normalize=True))
 print("\nTeste (y_test):\n", y_test.value_counts(normalize=True))
 
-
-# -----------------------------------------------------------------
-# INÍCIO DAS MUDANÇAS
-# -----------------------------------------------------------------
-
 # --- 6. Criar Pipelines de Pré-processamento ---
 numeric_transformer = Pipeline(steps=[
     ('scaler', StandardScaler())
 ])
 
-# NOVO: Pipeline para dados ordinais
-# Usamos OrdinalEncoder, que pode lidar com categorias desconhecidas
+# Pipeline para dados ordinais
+# OrdinalEncoder, que pode lidar com categorias desconhecidas
 ordinal_transformer = Pipeline(steps=[
     ('ordinal', OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1))
-    # 'unknown_value=-1' atribui -1 para qualquer categoria (como o '5')
+    # 'unknown_value=-1' atribui -1 para qualquer categoria
     # que ele não viu no treino, evitando o erro.
 ])
 
@@ -85,14 +80,14 @@ nominal_transformer = Pipeline(steps=[
 
 
 # --- 7. Aplicar Encoding (ColumnTransformer) ---
-# Juntamos TODOS os transformers em um só passo
+# Juntar TODOS os transformers em um só passo
 preprocessor = ColumnTransformer(
     transformers=[
         ('num', numeric_transformer, colunas_numericas),
         ('nom', nominal_transformer, colunas_nominais),
-        ('ord', ordinal_transformer, colunas_ordinais) # <-- ADICIONADO
+        ('ord', ordinal_transformer, colunas_ordinais) 
     ],
-    remainder='drop' # Descarta colunas que não listamos
+    remainder='drop' # Descarta colunas que não foram listadas 
 )
 
 print("\nAplicando One-Hot, Ordinal Encoding e Scaling...")
@@ -104,10 +99,6 @@ X_train_final = preprocessor.fit_transform(X_train)
 X_test_final = preprocessor.transform(X_test)
 
 print("Pré-processamento (Encoding/Scaling) concluído.")
-
-# -----------------------------------------------------------------
-# FIM DAS MUDANÇAS (O resto do código é o mesmo)
-# -----------------------------------------------------------------
 
 # --- 9. Aplicar o SMOTE (SOMENTE no conjunto de TREINO) ---
 print("\nAplicando SMOTE apenas nos dados de TREINO...")
@@ -129,10 +120,11 @@ print("Você está pronto para treinar seu modelo.")
 print("Use (X_train_smote, y_train_smote) para TREINAR.")
 print("Use (X_test_final, y_test) para AVALIAR.")
 
-# --- 10. Salvar os conjuntos de dados (Opcional, mas recomendado) ---
+# --- 10. Salvar os conjuntos de dados ---
 np.save('X_train_smote.npy', X_train_smote)
 np.save('y_train_smote.npy', y_train_smote)
 np.save('X_test_final.npy', X_test_final)
 np.save('y_test.npy', y_test)
+
 
 print("\n💾 Conjuntos de treino (balanceado) e teste (desbalanceado) salvos como arquivos .npy.")
