@@ -1,4 +1,4 @@
-#Divisão da base em treino e teste e balanceamento do conjunto de treino
+#Divisão da base em treino e teste, tratamento de outliers e balanceamento do conjunto de treino
 
 import pandas as pd
 import numpy as np
@@ -61,7 +61,27 @@ print("\n--- Distribuição das classes (Antes do SMOTE) ---")
 print("Treino (y_train):\n", y_train.value_counts(normalize=True))
 print("\nTeste (y_test):\n", y_test.value_counts(normalize=True))
 
-# --- 6. Criar Pipelines de Pré-processamento ---
+# --- 6. Tratamento de Outliers (Capping) ---
+# Aplicado APÓS o split, APENAS nas colunas numéricas
+print("\nAplicando Capping (Tratamento de Outliers) nos Percentis 1% e 99%...")
+
+for col in colunas_numericas:
+    # 1. Aprender os limites SOMENTE no TREINO
+    limite_inferior = X_train[col].quantile(0.01) # Percentil 1
+    limite_superior = X_train[col].quantile(0.99) # Percentil 99
+    
+    print(f"  [{col}]: Limites (de Treino) -> Inf={limite_inferior:.2f}, Sup={limite_superior:.2f}")
+    
+    # 2. Aplicar (travar) os limites no TREINO
+    X_train[col] = X_train[col].clip(lower=limite_inferior, upper=limite_superior)
+    
+    # 3. Aplicar os MESMOS limites (aprendidos do treino) no TESTE
+    X_test[col] = X_test[col].clip(lower=limite_inferior, upper=limite_superior)
+
+print("Capping concluído.")
+
+
+# --- 7. Criar Pipelines de Pré-processamento ---
 numeric_transformer = Pipeline(steps=[
     ('scaler', StandardScaler())
 ])
@@ -79,7 +99,7 @@ nominal_transformer = Pipeline(steps=[
 ])
 
 
-# --- 7. Aplicar Encoding (ColumnTransformer) ---
+# --- 8. Aplicar Encoding (ColumnTransformer) ---
 # Juntar TODOS os transformers em um só passo
 preprocessor = ColumnTransformer(
     transformers=[
@@ -128,3 +148,4 @@ np.save('y_test.npy', y_test)
 
 
 print("\n💾 Conjuntos de treino (balanceado) e teste (desbalanceado) salvos como arquivos .npy.")
+
